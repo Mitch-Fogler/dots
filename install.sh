@@ -1,11 +1,19 @@
 #!/bin/bash
 echo "warning, designed for arch (or arch based) won't work on anything else"
-mv config .config
 echo "installing dependencies"
-sudo pacman -Syu
-sudo pacman -S --needed dracut kexec-tools git hyprland waypaper hyprpaper hyprlock swayosd waybar hypridle imagemagick yay-git fish nvim nwg-displays kitty rofi flatpak playerctl papirus-icon-theme cantarell-fonts
-yay -Syu
-yay -S librewolf-bin gtk bibata-cursor-theme
+sudo pacman -Syu --noconfirm
+sudo pacman -S --needed --noconfirm dracut kexec-tools git hyprland waypaper hyprpaper hyprlock swayosd waybar hypridle imagemagick fish nvim nwg-displays kitty rofi flatpak playerctl papirus-icon-theme cantarell-fonts
+if ! command -v yay &>/dev/null; then
+  echo "yay not found, installing..."
+  sudo pacman -S --needed --noconfirm git base-devel
+  git clone https://aur.archlinux.org/yay.git /tmp/yay
+  cd /tmp/yay && makepkg -si --noconfirm
+else
+  echo "yay is already installed."
+fi
+yay -Syu --noconfirm
+yay -S --noconfirm librewolf-bin gtk bibata-cursor-theme waypaper
+[ -d config ] && mv config ~/.config
 echo "installing ohmyposh"
 mkdir ~/.local
 mkdir ~/.local/bin
