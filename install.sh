@@ -17,7 +17,7 @@ yay -S --noconfirm librewolf-bin gtk bibata-cursor-theme waypaper
 echo "installing ohmyposh"
 mkdir ~/.local
 mkdir ~/.local/bin
-curl -s https://ohmyposh.dev/install.sh | bash -s -- -d ~/bin
+curl -s https://ohmyposh.dev/install.sh | bash -s -- -d ~/.local/bin
 echo "installing lazy vim"
 mv ~/.config/nvim{,.bak}
 git clone https://github.com/LazyVim/starter ~/.config/nvim
@@ -31,7 +31,7 @@ mv "$HOME"/.config/nwg-displays{,.bak}
 mv "$HOME"/.config/kitty{,.bak}
 mv "$HOME"/.config/fish{,.bak}
 # theres gotta be a better way to do this
-cp background "$HOME"/background
+cp -r background "$HOME"/background
 cd .config
 cp -R hypr waypaper waybar ohmyposh nwg-displays kitty fish "$HOME"/.config
 echo "installing gtk theme"
