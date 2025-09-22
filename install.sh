@@ -1,5 +1,6 @@
 #!/bin/bash
 echo "warning, designed for arch (or arch based) won't work on anything else"
+mv config .config
 echo "installing dependencies"
 sudo pacman -Syu
 sudo pacman -S --needed dracut kexec-tools git hyprland waypaper hyprpaper hyprlock swayosd waybar hypridle imagemagick yay-git fish nvim nwg-displays kitty rofi flatpak playerctl papirus-icon-theme cantarell-fonts
