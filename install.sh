@@ -109,5 +109,5 @@ cd sddm-astronaut-theme
 cd ../.
 cp background "$HOME"/background
 sudo cp /etc/fstab{,.bak}
-sudo echo "UUID=3139-6135	/home/mitch/microsd	exfat	nofail,x-systemd.device-timeout=5s,uid=1000,gid=1000,umask=000	0 0" >>/etc/fstab
+sudo sh -c 'echo "UUID=3139-6135	/home/mitch/microsd	exfat	nofail,x-systemd.device-timeout=5s,uid=1000,gid=1000,umask=000	0 0" >>/etc/fstab'
 echo "finished, probably reboot"
