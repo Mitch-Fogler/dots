@@ -1,0 +1,11 @@
+#!/bin/bash
+# Create a lock file to disable panic-off behavior
+LOCK=/tmp/sd_protect.lock
+
+if [ -f "$LOCK" ]; then
+    echo "Already disarmed: $LOCK exists."
+else
+    touch "$LOCK"
+    echo "Disarmed. System will NOT shut down."
+fi
+

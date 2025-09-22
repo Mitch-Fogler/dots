@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# File to store the inhibitor PID
+PIDFILE="$HOME/.cache/waybar-inhibit-pid"
+
+# Ensure PIDFILE exists
+touch "$PIDFILE"
+
+case "$1" in
+  toggle)
+    if [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2> /dev/null; then
+      # If running, kill it to release lock
+      kill "$(cat "$PIDFILE")" && rm -f "$PIDFILE"
+    else
+      # Start inhibitor in background and record its PID
+      systemd-inhibit --what=shutdown:sleep:idle:handle-power-key:handle-suspend-key:handle-hibernate-key:handle-lid-switch --why="nosleep temporary" sleep infinity &
+      echo $! > "$PIDFILE"
+    fi
+    ;;
+  status)
+    # No-op: fall through to output below
+    ;;
+  *)
+    echo "Usage: $0 {toggle|status}" >&2
+    exit 1
+    ;;
+esac
+
+# Output JSON for Waybar
+if [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2> /dev/null; then
+  printf '{"text":"O","class":"enabled"}'
+else
+  printf '{"text":"X"}'
+fi
+

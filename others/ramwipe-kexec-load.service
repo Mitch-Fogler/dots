@@ -1,0 +1,16 @@
+[Unit]
+Description=Preload RAM-wipe kernel via kexec
+DefaultDependencies=no
+After=basic.target
+Wants=basic.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/kexec -l /boot/vmlinuz-linux \
+  --initrd=/boot/initramfs-ramwipe.img \
+  --command-line "ramwipe=1 quiet rd.break=pre-mount"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target
+

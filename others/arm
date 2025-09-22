@@ -1,0 +1,10 @@
+#!/bin/bash
+LOCK=/tmp/sd_protect.lock
+
+if [ -f "$LOCK" ]; then
+    rm -f "$LOCK"
+    echo "Armed. System WILL shut down."
+else
+    echo "No lock present; already armed."
+fi
+

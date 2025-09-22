@@ -1,0 +1,16 @@
+#!/bin/bash
+LOCK=/tmp/sd_protect.lock
+
+if [ -f "$LOCK" ]; then
+  logger -t microsd-watch "MicroSD removed but lock present — ignoring."
+  exit 0
+fi
+
+logger -t microsd-watch "MicroSD removed — initiating emergency response"
+
+if command -v kexec >/dev/null 2>&1; then
+  /usr/bin/kexec -e
+else
+  /usr/bin/systemctl poweroff -f
+fi
+

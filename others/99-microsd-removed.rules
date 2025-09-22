@@ -1,0 +1,7 @@
+# Fire on removal of the SD *disk* (not just a partition)
+ACTION=="remove", SUBSYSTEM=="block", KERNEL=="mmcblk0", ENV{DEVTYPE}=="disk", \
+  RUN+="/usr/bin/systemd-run --no-block /usr/bin/sd-removed"
+
+# If your reader appears as /dev/sdX instead (uncomment this and comment the one above):
+# ACTION=="remove", SUBSYSTEM=="block", KERNEL=="sd?", ENV{DEVTYPE}=="disk", \
+#   ENV{ID_DRIVE_MEDIA_SD}=="1", RUN+="/usr/bin/systemd-run --no-block /usr/local/bin/sd-removed.sh"

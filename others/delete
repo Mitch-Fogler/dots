@@ -1,0 +1,129 @@
+#!/bin/bash
+
+set -euo pipefail
+
+RECURSIVE=false
+FORCE=false
+QUICK=false
+
+# === Parse flags (allow combined short options) ===
+# Usage: secure-rm.sh [-r] [-f] [-q] [--] file_or_dir [...]
+OPTIND=1
+while getopts "rfq-:" opt; do
+  case "$opt" in
+    r) RECURSIVE=true ;;          # recursive remove
+    f) FORCE=true ;;              # force, suppress errors
+    q) QUICK=true ;;              # quick: single-pass shred
+    -)  # handle '--'
+        if [[ "$OPTARG" == "" ]]; then
+          shift $((OPTIND))
+          break
+        else
+          echo "Unknown option: --$OPTARG" >&2
+          exit 1
+        fi
+        ;;
+    \?) echo "Unknown option: -$OPTARG" >&2; exit 1 ;;
+  esac
+done
+# shift processed options
+shift $((OPTIND - 1))
+
+# === No paths given? ===
+if [[ "$#" -eq 0 ]]; then
+  echo "Usage: $0 [-r] [-f] [-q] [--] file_or_dir [...]"
+  exit 1
+fi
+
+# === Random name generator ===
+random_name() {
+  head -c 12 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 12
+}
+
+# === Securely delete regular file ===
+secure_delete_file() {
+  local file="$1"
+  local dir
+  dir=$(dirname "$file")
+
+  # rename to obscure filename
+  local newname="$dir/.$(random_name)"
+  mv "$file" "$newname"
+
+  # overwrite: quick (one pass) or default (3 passes + zero)
+  if [[ "$QUICK" == true ]]; then
+    shred -n 1 -z -u "$newname" || {
+      [[ "$FORCE" == true ]] || echo "[!] Failed to shred: $file"
+    }
+  else
+    shred -z -u "$newname" || {
+      [[ "$FORCE" == true ]] || echo "[!] Failed to shred: $file"
+    }
+  fi
+}
+
+# === Securely delete directory recursively with weighted progress ===
+secure_delete_dir() {
+  local dir="$1"
+  # gather file entries: size and path
+  mapfile -d '' entries < <(find "$dir" -type f -printf '%s %p\0')
+
+  # compute total bytes
+  local total_bytes=0
+  for entry in "${entries[@]}"; do
+    local size=${entry%% *}
+    total_bytes=$((total_bytes + size))
+  done
+
+  local shredded_bytes=0
+  # shred files with progress weighted by size
+  for entry in "${entries[@]}"; do
+    local size=${entry%% *}
+    local file=${entry#* }
+    secure_delete_file "$file"
+    shredded_bytes=$((shredded_bytes + size))
+    # compute percentage
+    local percent=$(( shredded_bytes * 100 / total_bytes ))
+    echo -ne "Progress: ${percent}% (${shredded_bytes}/${total_bytes} bytes)\r"
+  done
+  echo ""  # finish progress line
+
+  # remove empty subdirectories
+  find "$dir" -depth -type d -exec rmdir --ignore-fail-on-non-empty {} 2>/dev/null \;
+
+  # attempt to remove top-level dir
+  rmdir "$dir" 2>/dev/null || [[ "$FORCE" == true ]] || echo "[*] Couldn't remove directory: $dir"
+}
+
+# === Main loop ===
+for TARGET in "$@"; do
+  if [[ ! -e "$TARGET" && "$FORCE" == false ]]; then
+    echo "No such file or directory: $TARGET"
+    continue
+  elif [[ ! -e "$TARGET" && "$FORCE" == true ]]; then
+    continue
+  fi
+
+  if [[ -f "$TARGET" ]]; then
+    secure_delete_file "$TARGET"
+  elif [[ -L "$TARGET" ]]; then
+    # delete symlink like rm
+    echo "[*] Deleting symlink: $TARGET"
+    if [[ "$FORCE" == true ]]; then
+      /bin/rm -f -- "$TARGET" || echo "[!] Failed to delete symlink: $TARGET"
+    else
+      /bin/rm -- "$TARGET" || echo "[!] Failed to delete symlink: $TARGET"
+    fi
+  elif [[ -d "$TARGET" ]]; then
+    if [[ "$RECURSIVE" == true ]]; then
+      secure_delete_dir "$TARGET"
+    else
+      [[ "$FORCE" == true ]] || echo "Cannot remove '$TARGET': Is a directory"
+    fi
+  else
+    [[ "$FORCE" == true ]] || echo "Skipping unsupported type: $TARGET"
+  fi
+done
+
+echo "[✔] Secure deletion done."
+
